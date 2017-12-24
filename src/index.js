@@ -13,9 +13,12 @@ class Square extends React.Component {
 
 class Board extends React.Component {
     renderSquare(i) {
+        let style = this.props.highlighted[i] ? "background=yellow" : "background=white";
+  
         return (
                 <Square
                     value={this.props.squares[i]}
+                    style={style}
                     onClick={() => this.props.onClick(i)}
                     />
                 );
@@ -50,6 +53,9 @@ class Game extends React.Component {
         this.state = {
             history: [{
                     squares: Array(9).fill(null),
+                    highlighted: Array(9).fill(false),
+                    row: 0,
+                    col: 0,
                 }],
             stepNumber: 0,
             xIsNext: true,
@@ -67,6 +73,10 @@ class Game extends React.Component {
         this.setState({
             history: history.concat([{
                     squares: squares,
+                    highlighted: Array(9).fill(false),
+                    mark: squares[i],
+                    row: parseInt(i / 3) + 1,
+                    col: i % 3 + 1,
                 }]),
             stepNumber: history.length,
             xIsNext: !this.state.xIsNext,
@@ -87,7 +97,8 @@ class Game extends React.Component {
 
         const moves = history.map((step, move) => {
             const desc = move ?
-                    'Go to move #' + move :
+                    'Go to move #' + move + ", " +
+                    step.mark + " at (" + step.row + ", " + step.col + ")" :
                     'Go to game start';
             return (
                     <li key={move}>
@@ -108,6 +119,7 @@ class Game extends React.Component {
                     <div className="game-board">
                         <Board
                             squares={current.squares}
+                            highlighted={current.highlighted}
                             onClick={(i) => this.handleClick(i)}
                             />
                     </div>
@@ -143,7 +155,7 @@ function calculateWinner(squares) {
     for (let i = 0; i < lines.length; i++) {
         const [a, b, c] = lines[i];
         if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-            return squares[a];
+            return [a, b, c];
         }
     }
     return null;
