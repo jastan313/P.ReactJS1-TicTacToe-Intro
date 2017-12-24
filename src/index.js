@@ -3,8 +3,10 @@ import ReactDOM from 'react-dom';
 import './index.css';
 class Square extends React.Component {
     render() {
+        const style = this.props.selected ? {fontWeight: 'bold'} : {fontWeight: 'normal'};
         return (
-                <button className="square" onClick={() => this.props.onClick()}>
+                <button className="square" style={style}
+                        onClick={() => this.props.onClick()}>
                     {this.props.value}
                 </button>
                 );
@@ -13,12 +15,10 @@ class Square extends React.Component {
 
 class Board extends React.Component {
     renderSquare(i) {
-        let style = this.props.highlighted[i] ? "background=yellow" : "background=white";
-  
         return (
                 <Square
                     value={this.props.squares[i]}
-                    style={style}
+                    selected={this.props.selected == i}
                     onClick={() => this.props.onClick(i)}
                     />
                 );
@@ -53,10 +53,11 @@ class Game extends React.Component {
         this.state = {
             history: [{
                     squares: Array(9).fill(null),
-                    highlighted: Array(9).fill(false),
-                    row: 0,
-                    col: 0,
+                    mark: ' ',
+                    index: -1,
                 }],
+            moves: Array(9).fill(-1),
+            selected: -1,
             stepNumber: 0,
             xIsNext: true,
         };
@@ -66,18 +67,30 @@ class Game extends React.Component {
         const history = this.state.history.slice(0, this.state.stepNumber + 1);
         const current = history[history.length - 1];
         const squares = current.squares.slice();
-        if (calculateWinner(squares) || squares[i]) {
+        const moves = this.state.moves;
+        if (calculateWinner(squares)) {
+            return;
+        }
+        if (squares[i]) {
+            this.setState({
+                history: history,
+                moves: moves,
+                selected: i,
+                stepNumber: this.state.stepNumber,
+                xIsNext: this.state.xIsNext,
+            });
             return;
         }
         squares[i] = this.state.xIsNext ? 'X' : 'O';
+        moves[i] = history.length;
         this.setState({
             history: history.concat([{
                     squares: squares,
-                    highlighted: Array(9).fill(false),
                     mark: squares[i],
-                    row: parseInt(i / 3) + 1,
-                    col: i % 3 + 1,
+                    index: i,
                 }]),
+            moves: moves,
+            selected: i,
             stepNumber: history.length,
             xIsNext: !this.state.xIsNext,
         });
@@ -98,11 +111,13 @@ class Game extends React.Component {
         const moves = history.map((step, move) => {
             const desc = move ?
                     'Go to move #' + move + ", " +
-                    step.mark + " at (" + step.row + ", " + step.col + ")" :
+                    step.mark + " at (" + (parseInt(step.index / 3) + 1) + ", " + (step.index % 3 + 1) + ")" :
                     'Go to game start';
+            const style = this.state.moves[this.state.selected] == move ? {fontWeight: 'bold'} : {fontWeight: 'normal'};
             return (
                     <li key={move}>
-                        <button onClick={() => this.jumpTo(move)}>{desc}</button>
+                        <button style={style}
+                                onClick={() => this.jumpTo(move)}>{desc}</button>
                     </li>
                     );
         });
@@ -119,7 +134,7 @@ class Game extends React.Component {
                     <div className="game-board">
                         <Board
                             squares={current.squares}
-                            highlighted={current.highlighted}
+                            selected={this.state.selected}
                             onClick={(i) => this.handleClick(i)}
                             />
                     </div>
