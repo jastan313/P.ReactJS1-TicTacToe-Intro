@@ -27,37 +27,19 @@ class Board extends React.Component {
                 );
     }
 
-    renderRow(i, j) {
-        var tmp = [];
-        for (var index = i; i < j; i++) {
-            tmp.push(index);
-        }
-        var squares = tmp.map((i) => (this.renderSquare(i)));
-        return (
-                <div className="board-row">
-                    {squares}
-                </div>
-                );
-    }
-
     render() {
+        var rows = [];
+        let squares = [];
+        for (var i = 0; i < 3; i++) {
+            for (var j = 0; j < 3; j++) {
+                squares.push(this.renderSquare(i * 3 + j));
+            }
+            rows.push(<div className="board-row">{squares}</div>);
+            squares = [];
+        }
         return (
                 <div>
-                    <div className="board-row">
-                        {this.renderSquare(0)}
-                        {this.renderSquare(1)}
-                        {this.renderSquare(2)}
-                    </div>
-                    <div className="board-row">
-                        {this.renderSquare(3)}
-                        {this.renderSquare(4)}
-                        {this.renderSquare(5)}
-                    </div>
-                    <div className="board-row">
-                        {this.renderSquare(6)}
-                        {this.renderSquare(7)}
-                        {this.renderSquare(8)}
-                    </div>
+                    {rows}
                 </div>
                 );
     }
@@ -76,6 +58,7 @@ class Game extends React.Component {
             selected: -1,
             stepNumber: 0,
             xIsNext: true,
+            movesListDesc: true,
         };
     }
 
@@ -86,11 +69,7 @@ class Game extends React.Component {
         const moves = this.state.moves;
         if (squares[i]) {
             this.setState({
-                history: history,
-                moves: moves,
                 selected: i,
-                stepNumber: this.state.stepNumber,
-                xIsNext: this.state.xIsNext,
             });
             return;
         }
@@ -113,28 +92,6 @@ class Game extends React.Component {
         });
     }
 
-    checkWinner() {
-        const history = this.state.history.slice(0, this.state.stepNumber + 1);
-        const current = history[history.length - 1];
-        const squares = current.squares.slice();
-        const moves = this.state.moves;
-        const winningMoves = this.state.winningMoves;
-        let winningSquares = calculateWinner(squares);
-        if (winningSquares) {
-            for (var index = 0; index < winningSquares.length; index++) {
-                winningMoves[winningSquares[index]] = true;
-            }
-            this.setState({
-                history: history,
-                moves: moves,
-                winningMoves: winningMoves,
-                selected: this.state.selected,
-                stepNumber: this.state.stepNumber,
-                xIsNext: this.state.xIsNext,
-            });
-        }
-    }
-
     jumpTo(step) {
         this.setState({
             stepNumber: step,
@@ -142,16 +99,20 @@ class Game extends React.Component {
         });
     }
 
+    toggleListOrder() {
+        this.setState({
+            movesListDesc: !this.state.movesListDesc,
+        });
+    }
+
     render() {
+        let prevMovesHistory = this.state.movesListDesc ? this.state.history : this.state.history.slice(0).reverse();
         const history = this.state.history;
         const current = history[this.state.stepNumber];
-        const winner = calculateWinner(current.squares);
 
-        const previousMoves = history.map((step, move) => {
-            const desc = move ?
-                    'Go to move #' + move + ", " +
-                    step.mark + " at (" + (parseInt(step.index / 3) + 1) + ", " + (step.index % 3 + 1) + ")" :
-                    'Go to game start';
+        let previousMoves = prevMovesHistory.map((step, move) => {
+            const desc = move ? 'Go to move #' + move + ", " +
+                    step.mark + " at (" + (parseInt(step.index / 3) + 1) + ", " + (step.index % 3 + 1) + ")" : "Go to game start";
             const style = this.state.moves[this.state.selected] === move ? {fontWeight: 'bold'} : {fontWeight: 'normal'};
             return (
                     <li key={move}>
@@ -160,6 +121,7 @@ class Game extends React.Component {
                     </li>
                     );
         });
+
 
         let status;
         let winningMoves = Array(9).fill(false);
@@ -185,8 +147,13 @@ class Game extends React.Component {
                     </div>
                     <div className="game-info">
                         <div>{status}</div>
+                        <div> Current Order: {this.state.movesListDesc ? "Descending" : "Ascending"}
+                            <button onClick={() => this.toggleListOrder()}>
+                                {this.state.movesListDesc ? "-> Ascending" : "-> Descending"}</button>
+                        </div>
                         <ol>{previousMoves}</ol>
                     </div>
+                
                 </div>
                 );
     }
